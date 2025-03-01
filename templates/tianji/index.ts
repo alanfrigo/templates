@@ -9,17 +9,16 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
       serviceName: input.appServiceName,
       source: {
         type: "image",
         image: input.appServiceImage,
       },
       env: [
-        `DATABASE_URL=postgres://postgres:${databasePassword}@${input.projectName}_db:5432/${input.projectName}`,
+        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.appServiceName}-db:5432/$(PROJECT_NAME)`,
         `JWT_SECRET=${secret}`,
-        "ALLOW_REGISTER=\"false\"",
-        "ALLOW_OPENAPI=\"true\"",
+        'ALLOW_REGISTER="false"',
+        'ALLOW_OPENAPI="true"',
       ].join("\n"),
       domains: [
         {
@@ -33,12 +32,11 @@ export function generate(input: Input): Output {
   services.push({
     type: "postgres",
     data: {
-      projectName: input.projectName,
-      serviceName: 'db',
+      serviceName: `${input.appServiceName}-db`,
       image: "postgres:16",
       password: databasePassword,
-    }
-  })
+    },
+  });
 
   return { services };
 }

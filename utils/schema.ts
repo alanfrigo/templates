@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const randomPassword = () => randomBytes(10).toString("hex");
 
-export const emptyToUndefined = (value: any) => {
+const emptyToUndefined = (value: any) => {
   if (typeof value !== "string") return value;
   return value.trim() === "" ? undefined : value;
 };
@@ -15,7 +15,15 @@ export const projectNameRule = z
     "Invalid name. Use lowercase letters (a-z), digits (0-9), dash (-), underscore (_)."
   );
 
-export const backupPrefixRule = z
+export const databaseNameRule = z
+  .string()
+  .regex(/^[a-zA-Z][a-zA-Z0-9_]{0,62}$/, "Invalid name.");
+
+export const databaseUserRule = z
+  .string()
+  .regex(/^[a-zA-Z][a-zA-Z0-9_]{0,62}$/, "Invalid name.");
+
+const backupPrefixRule = z
   .string()
   .regex(
     /^[\w-/]*$/,
@@ -28,13 +36,13 @@ export const serviceNameRule = z
     /^[a-z0-9-_]+$/,
     "Invalid name. Use lowercase letters (a-z), digits (0-9), dash (-), underscore (_)."
   );
-export const processNameRule = z
+const processNameRule = z
   .string()
   .regex(
     /^[a-z0-9-_]+$/,
     "Invalid name. Use lowercase letters (a-z), digits (0-9), dash (-), underscore (_)."
   );
-export const volumeNameRule = z
+const volumeNameRule = z
   .string()
   .regex(
     /^[a-z0-9-_]+$/,
@@ -42,7 +50,7 @@ export const volumeNameRule = z
   );
 export const domainRule = z.string().regex(/^[^\s*]+$/);
 export const portRule = z.number().min(0).max(65535);
-export const passwordRule = z.preprocess(
+const passwordRule = z.preprocess(
   emptyToUndefined,
   z.string().default(randomPassword)
 );
@@ -102,7 +110,7 @@ export const appRedirectsSchema = z
   )
   .optional();
 
-export const appSourceSchema = z
+const appSourceSchema = z
   .union([
     z.object({
       type: z.literal("image"),
@@ -118,7 +126,49 @@ export const appSourceSchema = z
       path: z.string().regex(/^\//),
       autoDeploy: z.boolean(),
     }),
+    z.object({
+      type: z.literal("git"),
+      repo: z.string().min(1),
+      ref: z.string().min(1),
+      path: z.string().regex(/^\//),
+    }),
   ])
+  .optional();
+
+const composeSourceSchema = z
+  .union([
+    z.object({
+      type: z.literal("inline"),
+      content: z.string(),
+    }),
+    z.object({
+      type: z.literal("git"),
+      repo: z.string(),
+      ref: z.string(),
+      rootPath: z.string(),
+      composeFile: z.string(),
+    }),
+  ])
+  .optional();
+
+export const composeRedirectsSchema = z
+  .array(
+    z.object({
+      regex: z.string(),
+      replacement: z.string(),
+      permanent: z.boolean(),
+      enabled: z.boolean(),
+    })
+  )
+  .optional();
+
+const composeBasicAuthSchema = z
+  .array(
+    z.object({
+      username: z.string(),
+      password: z.string(),
+    })
+  )
   .optional();
 
 export const appBuildSchema = z
@@ -156,8 +206,8 @@ export const resourcesSchema = z
 export const backupSchema = z
   .object({
     enabled: z.boolean(),
-    schedule: z.string(),
-    destinationId: z.string(),
+    schedule: z.string().min(1),
+    destinationId: z.string().min(1),
     prefix: backupPrefixRule,
     databaseName: z.string().optional(),
   })
@@ -173,7 +223,7 @@ export const appPortsSchema = z
   )
   .default([]);
 
-export const appDomainsSchema = z
+export const domainsSchema = z
   .array(
     z.object({
       host: domainRule,
@@ -181,6 +231,23 @@ export const appDomainsSchema = z
       port: z.number().default(80),
       path: z.string().startsWith("/").default("/"),
       middlewares: z.array(z.string()).optional(),
+      certificateResolver: z.string().optional(),
+      wildcard: z.boolean().default(false),
+    })
+  )
+  .default([]);
+
+export const composeDomainsSchema = z
+  .array(
+    z.object({
+      https: z.boolean().default(true),
+      host: domainRule,
+      port: z.number().default(80),
+      service: z.string().default(""),
+      path: z.string().startsWith("/").default("/"),
+      middlewares: z.array(z.string()).optional(),
+      certificateResolver: z.string().optional(),
+      wildcard: z.boolean().default(false),
     })
   )
   .default([]);
@@ -229,7 +296,7 @@ export const boxGitSchema = z
   })
   .optional();
 
-export const nginxDefaultSite = `
+const nginxDefaultSite = `
 server {
 	listen 80 default_server;
 	listen [::]:80 default_server;
@@ -275,6 +342,7 @@ export const boxPhpSchema = z
     phpIni: z.string().default(""),
     enabled: z.boolean().default(true),
     ioncube: z.boolean().default(false),
+    sqlsrv: z.boolean().default(false),
   })
   .optional();
 
@@ -328,6 +396,7 @@ export const boxModulesSchema = z
     scripts: z.boolean().default(false),
     ports: z.boolean().default(false),
     resources: z.boolean().default(false),
+    env: z.boolean().default(false),
   })
   .default({});
 
@@ -390,6 +459,12 @@ export const boxPortsSchema = z
   )
   .default([]);
 
+export const boxEnvSchema = z
+  .object({
+    content: z.string().default(""),
+  })
+  .optional();
+
 export const boxSchema = z.object({
   projectName: projectNameRule,
   serviceName: serviceNameRule,
@@ -422,6 +497,107 @@ export const boxSchema = z.object({
   nginx: boxNginxSchema,
   python: boxPythonSchema,
   ruby: boxRubySchema,
+  env: boxEnvSchema,
+});
+
+export const wordpressGitSchema = z
+  .object({
+    name: z.string().optional(),
+    email: z.string().optional(),
+    url: z.string().optional(),
+    branch: z.string().optional(),
+  })
+  .optional();
+
+export const wordpressRedirectsSchema = z
+  .array(
+    z.object({
+      regex: z.string(),
+      replacement: z.string(),
+      permanent: z.boolean(),
+      enabled: z.boolean(),
+    })
+  )
+  .default([]);
+
+export const wordpressBasicAuthSchema = z
+  .array(
+    z.object({
+      username: z.string(),
+      password: z.string(),
+    })
+  )
+  .default([]);
+
+export const wordpressEnvSchema = z
+  .object({
+    content: z.string().default(""),
+  })
+  .optional();
+
+export const wordpressScriptsSchema = z
+  .array(
+    z.object({
+      name: z.string(),
+      content: z.string(),
+      webhookToken: z.string(),
+      schedule: z.string().optional(),
+      enabled: z.boolean(),
+    })
+  )
+  .default([]);
+
+export const wordpressIdeSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    defaultFolder: z.string().default("/code"),
+    token: z.string().default(() => randomBytes(10).toString("hex")),
+  })
+  .optional();
+
+export const wordpressPhpSchema = z
+  .object({
+    version: z.string().default("8.3"),
+    maxUploadSize: z.string().default("128M"),
+    maxExecutionTime: z.string().default("30"),
+    opcache: z.boolean().default(true),
+    phpIni: z.string().default(""),
+    ioncube: z.boolean().default(false),
+    sqlsrv: z.boolean().default(false),
+  })
+  .optional();
+
+export const wordpressNginxSchema = z
+  .object({
+    rootDocument: z.string().default("/code"),
+    config: z.string().default(nginxDefaultSite),
+  })
+  .optional();
+
+export const wordpressDomainSchema = z.object({
+  host: z.string(),
+  https: z.boolean(),
+  port: z.number(),
+  path: z.string(),
+  middlewares: z.array(z.string()).optional(),
+  certificateResolver: z.string().optional(),
+});
+
+export const wordpressSchema = z.object({
+  projectName: projectNameRule,
+  serviceName: serviceNameRule,
+  codeInitialized: z.boolean().default(false),
+  initialVersion: z.string().default("latest"),
+  git: wordpressGitSchema,
+  domain: wordpressDomainSchema,
+  redirects: wordpressRedirectsSchema,
+  basicAuth: wordpressBasicAuthSchema,
+  scripts: wordpressScriptsSchema,
+  resources: resourcesSchema,
+  ide: wordpressIdeSchema,
+  php: wordpressPhpSchema,
+  nginx: wordpressNginxSchema,
+  env: wordpressEnvSchema,
 });
 
 export const appSchema = z.object({
@@ -432,17 +608,30 @@ export const appSchema = z.object({
   env: z.string().default(""),
   basicAuth: appBasicAuthSchema,
   deploy: appDeploySchema,
-  domains: appDomainsSchema,
+  domains: domainsSchema,
   mounts: appMountsSchema,
   ports: appPortsSchema,
   resources: resourcesSchema,
   maintenance: maintenanceSchema,
 });
 
+export const composeSchema = z.object({
+  projectName: projectNameRule,
+  serviceName: serviceNameRule,
+  source: composeSourceSchema,
+  env: z.string().default(""),
+  createDotEnv: z.boolean().default(false),
+  domains: composeDomainsSchema,
+  redirects: composeRedirectsSchema,
+  basicAuth: composeBasicAuthSchema,
+  maintenance: maintenanceSchema,
+});
+
 export const mongoSchema = z.object({
   projectName: projectNameRule,
   serviceName: serviceNameRule,
-  image: z.preprocess(emptyToUndefined, z.string().default("mongo:6")),
+  user: databaseUserRule.optional(),
+  image: z.preprocess(emptyToUndefined, z.string().default("mongo:8")),
   password: passwordRule,
   resources: resourcesSchema,
   env: z.string().optional(),
@@ -452,7 +641,9 @@ export const mongoSchema = z.object({
 export const mysqlSchema = z.object({
   projectName: projectNameRule,
   serviceName: serviceNameRule,
-  image: z.preprocess(emptyToUndefined, z.string().default("mysql:8")),
+  databaseName: databaseNameRule.optional(),
+  user: databaseUserRule.optional(),
+  image: z.preprocess(emptyToUndefined, z.string().default("mysql:9")),
   password: passwordRule,
   rootPassword: passwordRule,
   resources: resourcesSchema,
@@ -463,6 +654,8 @@ export const mysqlSchema = z.object({
 export const mariadbSchema = z.object({
   projectName: projectNameRule,
   serviceName: serviceNameRule,
+  databaseName: databaseNameRule.optional(),
+  user: databaseUserRule.optional(),
   image: z.preprocess(emptyToUndefined, z.string().default("mariadb:11")),
   password: passwordRule,
   rootPassword: passwordRule,
@@ -474,7 +667,9 @@ export const mariadbSchema = z.object({
 export const postgresSchema = z.object({
   projectName: projectNameRule,
   serviceName: serviceNameRule,
-  image: z.preprocess(emptyToUndefined, z.string().default("postgres:16")),
+  databaseName: databaseNameRule.optional(),
+  user: databaseUserRule.optional(),
+  image: z.preprocess(emptyToUndefined, z.string().default("postgres:17")),
   password: passwordRule,
   resources: resourcesSchema,
   env: z.string().optional(),
@@ -496,28 +691,45 @@ export const templateSchema = z.object({
     z.union([
       z.object({
         type: z.literal("app"),
-        data: appSchema,
+        data: appSchema.omit({ projectName: true }),
       }),
       z.object({
         type: z.literal("mysql"),
-        data: mysqlSchema,
+        data: mysqlSchema.omit({ projectName: true }),
       }),
       z.object({
         type: z.literal("mariadb"),
-        data: mariadbSchema,
+        data: mariadbSchema.omit({ projectName: true }),
       }),
       z.object({
         type: z.literal("mongo"),
-        data: mongoSchema,
+        data: mongoSchema.omit({ projectName: true }),
       }),
       z.object({
         type: z.literal("postgres"),
-        data: postgresSchema,
+        data: postgresSchema.omit({ projectName: true }),
       }),
       z.object({
         type: z.literal("redis"),
-        data: redisSchema,
+        data: redisSchema.omit({ projectName: true }),
+      }),
+      z.object({
+        type: z.literal("compose"),
+        data: composeSchema.omit({ projectName: true }),
       }),
     ])
   ),
+});
+
+export const cloudflareTunnelRuleSchema = z.object({
+  id: z.string(),
+  projectName: projectNameRule,
+  serviceName: serviceNameRule,
+  subdomain: z.string(),
+  domain: z.string(),
+  path: z.string(),
+  internalProtocol: z.enum(["http", "https"]),
+  internalPort: z.number(),
+  zoneId: z.string(),
+  dnsRecordId: z.string(),
 });

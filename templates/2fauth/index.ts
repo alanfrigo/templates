@@ -1,4 +1,9 @@
-import { Output, randomPassword, randomString, Services } from "~templates-utils";
+import {
+  Output,
+  randomPassword,
+  randomString,
+  Services,
+} from "~templates-utils";
 import { Input } from "./meta";
 
 export function generate(input: Input): Output {
@@ -27,35 +32,34 @@ export function generate(input: Input): Output {
   if (input.databaseType === "sqlite") {
     appEnv.push(
       `DB_CONNECTION=sqlite`,
-      `DB_DATABASE="/srv/database/database.sqlite"`,
+      `DB_DATABASE="/srv/database/database.sqlite"`
     );
-  }else {
+  } else {
     const databasePassword = randomPassword();
     services.push({
       type: input.databaseType,
       data: {
-        projectName: input.projectName,
         serviceName: input.databaseServiceName,
         password: databasePassword,
       },
     });
-    if (input.databaseType === "postgres"){
+    if (input.databaseType === "postgres") {
       appEnv.push(
         `DB_CONNECTION=pgsql`,
         `DB_PORT=5432`,
         `DB_DATABASE=$(PROJECT_NAME)`,
         `DB_HOST=$(PROJECT_NAME)_${input.databaseServiceName}`,
         `DB_USERNAME=${input.databaseType}`,
-        `DB_PASSWORD=${databasePassword}`,
+        `DB_PASSWORD=${databasePassword}`
       );
-    }else {
+    } else {
       appEnv.push(
         `DB_CONNECTION=mysql`,
         `DB_PORT=3306`,
         `DB_DATABASE=$(PROJECT_NAME)`,
         `DB_HOST=$(PROJECT_NAME)_${input.databaseServiceName}`,
         `DB_USERNAME=${input.databaseType}`,
-        `DB_PASSWORD=${databasePassword}`,
+        `DB_PASSWORD=${databasePassword}`
       );
     }
   }
@@ -64,23 +68,18 @@ export function generate(input: Input): Output {
     const redisPassword = randomPassword();
     services.push({
       type: "redis",
-      data: {
-        projectName: input.projectName,
-        serviceName: input.redisServiceName,
-        password: redisPassword,
-      },
+      data: { serviceName: input.redisServiceName, password: redisPassword },
     });
     appEnv.push(
       `REDIS_HOST=$(PROJECT_NAME)_${input.redisServiceName}`,
       `REDIS_PASSWORD=${redisPassword}`,
-      `REDIS_PORT=6379`,
-      );
+      `REDIS_PORT=6379`
+    );
   }
 
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
       serviceName: input.appServiceName,
       env: appEnv.join("\n"),
       source: {

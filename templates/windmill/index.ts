@@ -8,15 +8,14 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
-      serviceName: `${input.serviceNamePrefix}-server`,
+      serviceName: `${input.appServiceName}-server`,
       env: [
-        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.serviceNamePrefix}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
+        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.appServiceName}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
         `MODE=server`,
       ].join("\n"),
       source: {
         type: "image",
-        image: "ghcr.io/windmill-labs/windmill:main",
+        image: `${input.appServiceImage}`,
       },
       domains: [
         {
@@ -30,10 +29,9 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
-      serviceName: `${input.serviceNamePrefix}-lsp`,
+      serviceName: `${input.appServiceName}-lsp`,
       env: [
-        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.serviceNamePrefix}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
+        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.appServiceName}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
         `MODE=server`,
       ].join("\n"),
       source: {
@@ -54,10 +52,9 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
-      serviceName: `${input.serviceNamePrefix}-worker`,
+      serviceName: `${input.appServiceName}-worker`,
       env: [
-        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.serviceNamePrefix}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
+        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.appServiceName}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
         `MODE=worker`,
         `WORKER_GROUP=default`,
       ].join("\n"),
@@ -86,10 +83,9 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
-      serviceName: `${input.serviceNamePrefix}-worker-native`,
+      serviceName: `${input.appServiceName}-worker-native`,
       env: [
-        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.serviceNamePrefix}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
+        `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_${input.appServiceName}-database:5432/$(PROJECT_NAME)?sslmode=disable`,
         `MODE=worker`,
         `WORKER_GROUP=native`,
       ].join("\n"),
@@ -106,8 +102,7 @@ export function generate(input: Input): Output {
   services.push({
     type: "postgres",
     data: {
-      projectName: input.projectName,
-      serviceName: `${input.serviceNamePrefix}-database`,
+      serviceName: `${input.appServiceName}-database`,
       password: databasePassword,
     },
   });

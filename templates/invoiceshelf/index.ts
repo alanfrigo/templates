@@ -8,7 +8,6 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
       serviceName: input.appServiceName,
       source: {
         type: "image",
@@ -17,28 +16,27 @@ export function generate(input: Input): Output {
       domains: [
         {
           host: "$(EASYPANEL_DOMAIN)",
-          port: 80
-        }
+          port: 80,
+        },
       ],
       mounts: [
         {
           type: "volume",
           name: "data",
-          mountPath: "/data"
+          mountPath: "/data",
         },
         {
           type: "volume",
           name: "conf",
-          mountPath: "/conf"
+          mountPath: "/conf",
         },
-      ]
-    }
+      ],
+    },
   });
 
   services.push({
     type: "mariadb",
     data: {
-      projectName: input.projectName,
       serviceName: input.dbServiceName,
       image: input.dbServiceImage,
       password: databasePassword,

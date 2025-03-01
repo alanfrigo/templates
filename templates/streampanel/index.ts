@@ -3,7 +3,7 @@ import { Input } from "./meta";
 
 export function generate(input: Input): Output {
   const services: Services = [];
-  const databasePassword = randomPassword()
+  const databasePassword = randomPassword();
   const secret = randomPassword();
 
   const env = [
@@ -15,19 +15,18 @@ export function generate(input: Input): Output {
     `NEXTAUTH_SECRET=${secret}`,
     "NEXTAUTH_URL=https://$(PRIMARY_DOMAIN)",
     "",
-    `DATABASE_URL=postgres://postgres:${databasePassword}@${input.projectName}_postgres:5432/${input.projectName}`,
+    `DATABASE_URL=postgres://postgres:${databasePassword}@$(PROJECT_NAME)_postgres:5432/$(PROJECT_NAME)`,
     "",
     "EASYPANEL_URL=https://your-easypanel.url",
     "EASYPANEL_API_KEY=your-easypanel-apikey",
     "",
     "GOOGLE_CLIENT_ID=___.apps.googleusercontent.com",
-    "GOOGLE_CLIENT_SECRET=your-google-secret"
+    "GOOGLE_CLIENT_SECRET=your-google-secret",
   ];
 
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
       serviceName: input.appServiceName,
       source: {
         type: "github",
@@ -35,16 +34,16 @@ export function generate(input: Input): Output {
         repo: "stream-panel",
         ref: "dev",
         path: "/",
-        autoDeploy: true
+        autoDeploy: true,
       },
       build: {
-        type: "nixpacks"
+        type: "nixpacks",
       },
       env: env.join("\n"),
       deploy: {
         replicas: 1,
         command: "npx prisma migrate deploy && npm run start",
-        zeroDowntime: true
+        zeroDowntime: true,
       },
       domains: [
         {
@@ -54,15 +53,14 @@ export function generate(input: Input): Output {
       ],
     },
   });
-  
+
   services.push({
     type: "postgres",
     data: {
-      projectName: input.projectName,
       serviceName: "postgres",
       image: "postgres:16",
-      password: databasePassword
-    }
+      password: databasePassword,
+    },
   });
 
   return { services };

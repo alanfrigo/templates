@@ -35,7 +35,6 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
       serviceName: input.appServiceName,
       env,
       source: {
@@ -70,7 +69,6 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
       serviceName: input.sidekiqServiceName,
       env,
       source: {
@@ -80,13 +78,19 @@ export function generate(input: Input): Output {
       deploy: {
         command: "bundle exec sidekiq -C config/sidekiq.yml",
       },
+      mounts: [
+        {
+          type: "bind",
+          hostPath: `/etc/easypanel/projects/$(PROJECT_NAME)/${input.appServiceName}/volumes/app`,
+          mountPath: "/app/storage",
+        },
+      ],
     },
   });
 
   services.push({
     type: "redis",
     data: {
-      projectName: input.projectName,
       serviceName: input.redisServiceName,
       password: randomPasswordRedis,
     },
@@ -95,7 +99,6 @@ export function generate(input: Input): Output {
   services.push({
     type: "postgres",
     data: {
-      projectName: input.projectName,
       serviceName: input.databaseServiceName,
       image: "postgres:12",
       password: randomPasswordPostgres,

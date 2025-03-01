@@ -7,7 +7,6 @@ export function generate(input: Input): Output {
   services.push({
     type: "app",
     data: {
-      projectName: input.projectName,
       serviceName: input.appServiceName,
       env: [
         "MINIO_SERVER_URL=https://$(EASYPANEL_DOMAIN)",
@@ -27,7 +26,7 @@ export function generate(input: Input): Output {
       ],
       domains: [
         {
-          host: "console.$(EASYPANEL_DOMAIN)",
+          host: "console-$(EASYPANEL_DOMAIN)",
           port: 9001,
         },
         {

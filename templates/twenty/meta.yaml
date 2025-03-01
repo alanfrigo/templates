@@ -1,0 +1,35 @@
+name: Twenty
+description:
+  Twenty is an open-source CRM platform designed to offer full customization and
+  control over your customer relationship management. It provides the
+  flexibility to self-host, avoiding vendor lock-in and offering cost-effective
+  solutions.
+instructions:
+  Follow the guide for setting up modules.
+  https://twenty.com/developers/section/self-hosting/self-hosting-var. Before
+  hitting deploy, configure the .env as instructed in the Environment Variables
+  section.
+changeLog:
+  - date: 2024-7-26
+    description: first release
+links:
+  - label: Website
+    url: https://twenty.com
+  - label: Documentation
+    url: https://twenty.com/developers
+  - label: Github
+    url: https://github.com/twentyhq/twenty
+contributors:
+  - name: Serban Alexandru
+    url: https://github.com/serban-alexandru
+  - name: Ahson Shaikh
+    url: https://github.com/Ahson-Shaikh
+schema:
+  type: object
+  required:
+    - serviceName
+  properties:
+    serviceName:
+      type: string
+      title: Service Name
+      default: twenty
